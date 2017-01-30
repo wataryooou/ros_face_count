@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+'''
+count.py
+Copyright (C) 2017  Ryou Watanabe <ryou.asia@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
 import rospy, cv2
 from std_msgs.msg import Int32
 from sensor_msgs.msg import Image
@@ -9,17 +27,18 @@ class Face():
     def __init__(self):
         sub = rospy.Subscriber("/cv_camera/image_raw", Image, self.get_image)
         self.pub = rospy.Publisher("face", Image, queue_size=1)
-        self.bridge = CvBridge()
-        self.image = None
+        self.cv_bridge = CvBridge()
         self.p_number = 0
+        self.image = None
         self.flag = True
         self.flag_counter = 0
+        proc = subprocess.call( "gpio -g mode 20 out", shell=True)
         self.cmd = "gpio -g write 20 0"
 
 
     def get_image(self,img):
         try:
-            self.image = self.bridge.imgmsg_to_cv2(img, "bgr8")
+            self.image = self.cv_bridge.imgmsg_to_cv2(img, "bgr8")
         except CvBridgeError as e:
             rospy.logerr(e)
 
@@ -28,7 +47,10 @@ class Face():
             self.p_number += 1
             self.flag = False
 
-    def control(self):
+    def get_p_num(self):
+        return self.p_number
+
+    def main(self):
         if self.image is None:
             return None
 
@@ -48,13 +70,12 @@ class Face():
                 self.flag = True
                 self.cmd = "gpio -g write 20 0"
                 self.flag_counter = 0
-                
+
         proc = subprocess.call( self.cmd , shell=True)
 
-    def get_p_num(self):
-        return self.p_number
 
-if __name__ == '__main__':
+
+def main():
     rospy.init_node('count')
     pub = rospy.Publisher('count_up', Int32, queue_size=1)
     pub_face = rospy.Publisher('count_face', Int32, queue_size=1)
@@ -64,10 +85,13 @@ if __name__ == '__main__':
     face_num = 0
     while not rospy.is_shutdown():
         if (n % 5)==0:
-            face.control()
+            face.main()
             face_num = face.get_p_num()
             pub_face.publish(face_num)
 
         n += 1
         pub.publish(n)
         rate.sleep()
+
+if __name__ == '__main__':
+    main()

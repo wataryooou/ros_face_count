@@ -50,4 +50,4 @@ launchする．
 [Licence](https://github.com/Ryou-Watanabe/ros_face_count/blob/master/LICENSE)
 
 ## Author
-[Ryou Watanabe](https://github.com/Ryou-Watanabe)
+[Ryo Watanabe](https://github.com/wataryooou)
